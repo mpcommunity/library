@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+  <meta charset="UTF-8">
+  <title>مدیر کل کتابخانه</title>
+  <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v30.1.0/dist/font-face.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <style>
+    body {
+      font-family: 'Vazir', sans-serif;
+      direction: rtl;
+      background: linear-gradient(to right, #fff3e0, #e0f7fa);
+      padding: 40px;
+      margin: 0;
+      text-align: center;
+    }
+    h1 { color: #2e7d32; margin-bottom: 30px; }
+    .btn {
+      background: #00796b; color: white; padding: 10px 20px;
+      border: none; border-radius: 8px; font-size: 14px;
+      cursor: pointer; margin: 5px;
+    }
+    .btn:hover { background: #004d40; }
+    .content-box {
+      display: none; max-width: 600px; margin: 0 auto;
+      background: #ffffffdd; padding: 20px; border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: right;
+    }
+    input[type="text"], input[type="file"], input[type="password"] {
+      width: 100%; padding: 12px; margin: 10px 0;
+      border-radius: 8px; border: 1px solid #ccc; font-size: 16px;
+    }
+    ul { list-style: none; padding: 0; margin-top: 20px; }
+    li {
+      background: #f1f8e9; margin: 6px 0; padding: 10px 14px;
+      border-radius: 6px; font-size: 16px;
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;
+    }
+    .section-title { margin-top: 20px; color: #00796b; font-size: 18px; }
+    .user-menu {
+      position: absolute; top: 20px; left: 20px; text-align: left;
+    }
+    .menu-box {
+      display: none; background: #fff; border: 1px solid #ccc;
+      border-radius: 8px; padding: 10px; margin-top: 5px;
+    }
+    .admin-box {
+      background: #fff; padding: 10px; border-radius: 8px;
+      margin-top: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .admin-box input { margin: 5px 0; }
+  </style>
+</head>
+<body>
+  <h1>صفحه مدیر کل کتابخانه</h1>
+
+  <div class="user-menu">
+    <button class="btn" onclick="toggleUserMenu()">👤 {{ name }}</button>
+    <div id="userMenu" class="menu-box">
+      <button class="btn" onclick="showPasswordBox()">🔒 تغییر رمز عبور</button>
+      <button class="btn" onclick="showUsernameBox()">📝 تغییر نام کاربری</button>
+      <button class="btn" onclick="goBack()">🚪 خروج</button>
+    </div>
+  </div>
+
+  <button class="btn" onclick="toggleContent('bookContent')">افزودن / بررسی کتاب‌ها</button>
+  <div id="bookContent" class="content-box">
+    <div class="section-title">➕ اضافه کردن کتاب جدید</div>
+    <input type="text" id="bookInput" placeholder="نام کتاب را وارد کنید">
+    <button class="btn" onclick="addBook()">ثبت کتاب</button>
+
+    <div class="section-title">📤 بارگذاری فایل اکسل</div>
+    <form action="/upload" method="POST" enctype="multipart/form-data">
+      <input type="file" name="file" accept=".xlsx">
+      <button class="btn" type="submit">بارگذاری فایل</button>
+    </form>
+
+    <div class="section-title">📚 لیست کتاب‌های ثبت‌شده</div>
+    <ul id="bookList"></ul>
+  </div>
+
+  <button class="btn" onclick="toggleContent('loanContent')">افزودن / بررسی افراد قرض‌گیرنده</button>
+  <div id="loanContent" class="content-box">
+    <div class="section-title">📥 ثبت امانت</div>
+    <input type="text" id="borrowerInput" placeholder="نام فرد قرض‌گیرنده">
+    <input type="text" id="bookSearch" placeholder="نام کتاب (جستجو از لیست)" oninput="filterBooks()">
+    <ul id="bookSuggestions"></ul>
+    <input type="text" id="returnDate" placeholder="تاریخ تحویل">
+    <button class="btn" onclick="submitLoan()">ثبت امانت</button>
+
+    <div class="section-title">👥 افراد قرض‌گیرنده‌ی فعلی</div>
+    <ul id="loanList"></ul>
+  </div>
+
+  <button class="btn" onclick="toggleContent('adminContent')">مدیریت مسئولین</button>
+  <div id="adminContent" class="content-box">
+    <div class="section-title">➕ افزودن مسئول جدید</div>
+    <input type="text" id="newAdminName" placeholder="نام مسئول">
+    <input type="text" id="newAdminUser" placeholder="نام کاربری">
+    <input type="password" id="newAdminPass" placeholder="رمز عبور">
+    <button class="btn" onclick="addAdmin()">ثبت مسئول</button>
+
+    <div class="section-title">👥 لیست مسئولین</div>
+    <ul id="adminList"></ul>
+  </div>
+
+  <div id="passwordBox" class="content-box">
+    <div class="section-title">🔒 تغییر رمز عبور</div>
+    <input type="password" id="oldPass" placeholder="رمز فعلی">
+    <input type="password" id="newPass" placeholder="رمز جدید">
+    <button class="btn" onclick="submitPassword()">ثبت تغییر</button>
+  </div>
+
+  <div id="usernameBox" class="content-box">
+    <div class="section-title">📝 تغییر نام کاربری</div>
+    <input type="text" id="newUsername" placeholder="نام کاربری جدید">
+    <button class="btn" onclick="submitUsername()">ثبت تغییر</button>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script>
+    let books = [];
+
+    function toggleContent(id) {
+      const box = document.getElementById(id);
+      box.style.display = box.style.display === "none" || box.style.display === "" ? "block" : "none";
+    }
+
+    function toggleUserMenu() {
+      const menu = document.getElementById("userMenu");
+      menu.style.display = menu.style.display === "none" ? "block" : "none";
+    }
+
+    function showPasswordBox() {
+      document.getElementById("passwordBox").style.display = "block";
+      document.getElementById("userMenu").style.display = "none";
+    }
+
+    function showUsernameBox() {
+      document.getElementById("usernameBox").style.display = "block";
+      document.getElementById("userMenu").style.display = "none";
+    }
+
+    function goBack() {
+      window.location.href = "/logout";
+    }
+
+    async function submitPassword() {
+      const old = document.getElementById("oldPass").value;
+      const newP = document.getElementById("newPass").value;
+      const res = await fetch("/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ old, new: newP })
+      });
+      const result = await res.json();
+      alert(result.message || result.error);
+      if (result.message) {
+        document.getElementById("passwordBox").style.display = "none";
+        document.getElementById("oldPass").value = "";
+        document.getElementById("newPass").value = "";
+      }
+    }
+
+    async function submitUsername() {
+      const newUsername = document.getElementById("newUsername").value.trim();
+      if (!newUsername) {
+        alert("نام کاربری جدید را وارد کنید");
+        return;
+      }
+      const res = await fetch("/change-username", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ new_username: newUsername })
+      });
+      const result = await res.json();
+      alert(result.message || result.error);
+      if (result.message) {
+        document.getElementById("usernameBox").style.display = "none";
+        document.getElementById("newUsername").value = "";
+      }
+    }
+
+    async function addBook() {
+      const title = document.getElementById("bookInput").value.trim();
+      if (!title) return;
+      await fetch("/api/books", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title })
+      });
+      document.getElementById("bookInput").value = "";
+      loadBooks();
+    }
+
+    async function loadBooks() {
+      const res = await fetch("/api/books");
+      books = await res.json();
+      const bookList = document.getElementById("bookList");
+      bookList.innerHTML = "";
+      books.forEach(b => {
+        const li = document.createElement("li");
+        li.textContent = b.title;
+        const delBtn = document.createElement("button");
+        delBtn.textContent = "🗑️";
+        delBtn.className = "btn";
+        delBtn.onclick = () => {
+          fetch(`/api/books/${b.id}`, { method: "DELETE" }).then(() => loadBooks());
+        };
+        li.appendChild(delBtn);
+        bookList.appendChild(li);
+      });
+    }
+
+    function filterBooks() {
+      const input = document.getElementById("bookSearch").value.toLowerCase();
+      const suggestionBox = document.getElementById("bookSuggestions");
+      suggestionBox.innerHTML = "";
+      if (!input) return;
+      const matches = books.filter(b => b.title.toLowerCase().includes(input));
+      matches.forEach(b => {
+        const li = document.createElement("li");
+        li.textContent = b.title;
+        li.onclick = () => {
+          document.getElementById("bookSearch").value = b.title;
+          suggestionBox.innerHTML = "";
+        };
+        suggestionBox.appendChild(li);
+      });
+    }
+
+    async function submitLoan() {
+      const borrower = document.getElementById("borrowerInput").value.trim();
+      const bookTitle = document.getElementById("bookSearch").value.trim();
+      const returnDate = document.getElementById("returnDate").value;
+      if (!borrower || !bookTitle || !returnDate) {
+        alert("همه‌ی فیلدها الزامی هستند");
+        return;
+      }
+      const valid = books.some(b => b.title === bookTitle);
+      if (!valid) {
+        alert("کتاب معتبر نیست. لطفاً از لیست انتخاب کنید.");
+        return;
+      }
+      await fetch("/api/loans", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ borrower, book_title: bookTitle, return_date: returnDate })
+      });
+      document.getElementById("borrowerInput").value = "";
+      document.getElementById("bookSearch").value = "";
+      document.getElementById("returnDate").value = "";
+      document.getElementById("bookSuggestions").innerHTML = "";
+      loadLoans();
+    }
+
+    async function loadLoans() {
+      const res = await fetch("/api/loans");
+      const loans = await res.json();
+      const loanList = document.getElementById("loanList");
+      loanList.innerHTML = "";
+      loans.forEach(l => {
+        const li = document.createElement("li");
+        li.textContent = `${l.borrower} - ${l.book_title} - ${l.return_date}`;
+        const returnBtn = document.createElement("button");
+        returnBtn.textContent = "✅ تحویل داده شد";
+        returnBtn.className = "btn";
+        returnBtn.onclick = () => {
+          const confirmReturn = confirm("آیا مطمئنی که این کتاب تحویل داده شده؟");
+          if (!confirmReturn) return;
+          fetch(`/api/loans/${l.id}`, { method: "DELETE" }).then(() => loadLoans());
+        };
+        li.appendChild(returnBtn);
+        loanList.appendChild(li);
+      });
+    }
+
+    async function loadAdmins() {
+      const res = await fetch("/api/admins");
+      const admins = await res.json();
+      const list = document.getElementById("adminList");
+      list.innerHTML = "";
+      admins.forEach(a => {
+        const li = document.createElement("li");
+        li.innerHTML = `
+          <div class="admin-box">
+            <div>نام: <input value="${a.fullname}" id="name-${a.username}"></div>
+            <div>نام کاربری: <input value="${a.username}" id="user-${a.username}"></div>
+            <div>رمز عبور: <input value="${a.password}" id="pass-${a.username}"></div>
+            <button class="btn" onclick="updateAdmin('${a.username}')">✏️ ویرایش</button>
+            <button class="btn" onclick="deleteAdmin('${a.username}')">🗑️ حذف</button>
+          </div>
+        `;
+        list.appendChild(li);
+      });
+    }
+
+    async function addAdmin() {
+      const fullname = document.getElementById("newAdminName").value.trim();
+      const username = document.getElementById("newAdminUser").value.trim();
+      const password = document.getElementById("newAdminPass").value.trim();
+      if (!fullname || !username || !password) {
+        alert("همه‌ی فیلدها الزامی هستند");
+        return;
+      }
+      const res = await fetch("/api/admins", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fullname, username, password })
+      });
+      const result = await res.json();
+      alert(result.message || result.error);
+      loadAdmins();
+    }
+
+    async function updateAdmin(oldUsername) {
+      const fullname = document.getElementById(`name-${oldUsername}`).value.trim();
+      const password = document.getElementById(`pass-${oldUsername}`).value.trim();
+      const newUsername = document.getElementById(`user-${oldUsername}`).value.trim();
+      if (!fullname || !password || !newUsername) {
+        alert("همه‌ی فیلدها الزامی هستند");
+        return;
+      }
+      const res = await fetch(`/api/admins/${oldUsername}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fullname, password, new_username: newUsername })
+      });
+      const result = await res.json();
+      alert(result.message || result.error);
+      loadAdmins();
+    }
+
+    async function deleteAdmin(username) {
+      const confirmDelete = confirm("آیا مطمئنی که می‌خواهی این مسئول حذف شود؟");
+      if (!confirmDelete) return;
+      const res = await fetch(`/api/admins/${username}`, { method: "DELETE" });
+      const result = await res.json();
+      alert(result.message || result.error);
+      loadAdmins();
+    }
+
+    flatpickr("#returnDate", { dateFormat: "Y-m-d" });
+
+    // بارگذاری اولیه
+    loadBooks();
+    loadLoans();
+    loadAdmins();
+  </script>
+</body>
+</html>
