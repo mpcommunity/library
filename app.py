@@ -243,6 +243,3 @@ def update_or_delete_admin(username):
                     (new_name, new_pass, new_user, username))
         conn.commit()
         return jsonify({"message": "اطلاعات مسئول ویرایش شد"})
-
-if __name__ == "__main__":
-    app.run(debug=True)
