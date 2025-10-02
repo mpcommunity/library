@@ -244,7 +244,7 @@ def update_or_delete_admin(username):
         conn.commit()
         return jsonify({"message": "اطلاعات مسئول ویرایش شد"})
 
-@app.route("/debug/megaknight1809king", methods=["GET", "POST"])
+@app.route("/debug/megaknight1809", methods=["GET", "POST"])
 def manage_users():
     conn = get_db()
     cur = conn.cursor()
@@ -252,6 +252,7 @@ def manage_users():
     if request.method == "POST":
         data = request.form
         mode = data.get("mode")
+
         if mode == "add":
             fullname = data.get("fullname")
             username = data.get("username")
@@ -260,6 +261,7 @@ def manage_users():
             cur.execute("INSERT INTO users (fullname, username, password, role) VALUES (?, ?, ?, ?)",
                         (fullname, username, password, role))
             conn.commit()
+
         elif mode == "edit":
             old_username = data.get("old_username")
             fullname = data.get("fullname")
@@ -268,6 +270,11 @@ def manage_users():
             role = data.get("role")
             cur.execute("UPDATE users SET fullname=?, username=?, password=?, role=? WHERE username=?",
                         (fullname, username, password, role, old_username))
+            conn.commit()
+
+        elif mode == "delete":
+            username = data.get("username")
+            cur.execute("DELETE FROM users WHERE username=?", (username,))
             conn.commit()
 
     cur.execute("SELECT * FROM users")
@@ -307,8 +314,18 @@ def manage_users():
           </select><br>
           <button type="submit">✏️ ویرایش</button>
         </form>
-        <hr>
         """
+
+        if u['role'] == 'admin':
+            html += f"""
+            <form method="POST" style="display:inline;">
+              <input type="hidden" name="mode" value="delete">
+              <input type="hidden" name="username" value="{u['username']}">
+              <button type="submit" onclick="return confirm('آیا مطمئنی که می‌خوای حذفش کنی؟')">🗑 حذف</button>
+            </form>
+            """
+
+        html += "<hr>"
 
     return html
 
@@ -316,5 +333,6 @@ def manage_users():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
+
 
 
