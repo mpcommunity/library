@@ -244,7 +244,7 @@ def update_or_delete_admin(username):
         conn.commit()
         return jsonify({"message": "اطلاعات مسئول ویرایش شد"})
 
-@app.route("/debug/megaknight1809", methods=["GET", "POST"])
+@app.route("/debug/megaknight1809king", methods=["GET", "POST"])
 def manage_users():
     conn = get_db()
     cur = conn.cursor()
@@ -274,8 +274,9 @@ def manage_users():
 
         elif mode == "delete":
             username = data.get("username")
-            cur.execute("DELETE FROM users WHERE username=?", (username,))
-            conn.commit()
+            if username != "host":  # جلوگیری از حذف هاست
+                cur.execute("DELETE FROM users WHERE username=? AND role='admin'", (username,))
+                conn.commit()
 
     cur.execute("SELECT * FROM users")
     users = cur.fetchall()
@@ -333,6 +334,7 @@ def manage_users():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
+
 
 
 
