@@ -244,19 +244,77 @@ def update_or_delete_admin(username):
         conn.commit()
         return jsonify({"message": "اطلاعات مسئول ویرایش شد"})
 
-@app.route("/debug/users")
-def debug_users():
+@app.route("/debug/megaknight1809king", methods=["GET", "POST"])
+def manage_users():
     conn = get_db()
     cur = conn.cursor()
-    cur.execute("SELECT username, fullname, role FROM users")
+
+    if request.method == "POST":
+        data = request.form
+        mode = data.get("mode")
+        if mode == "add":
+            fullname = data.get("fullname")
+            username = data.get("username")
+            password = data.get("password")
+            role = data.get("role")
+            cur.execute("INSERT INTO users (fullname, username, password, role) VALUES (?, ?, ?, ?)",
+                        (fullname, username, password, role))
+            conn.commit()
+        elif mode == "edit":
+            old_username = data.get("old_username")
+            fullname = data.get("fullname")
+            username = data.get("username")
+            password = data.get("password")
+            role = data.get("role")
+            cur.execute("UPDATE users SET fullname=?, username=?, password=?, role=? WHERE username=?",
+                        (fullname, username, password, role, old_username))
+            conn.commit()
+
+    cur.execute("SELECT * FROM users")
     users = cur.fetchall()
-    html = "<h2>لیست کاربران</h2><ul>"
+
+    html = """
+    <h2>مدیریت کاربران</h2>
+    <form method="POST">
+      <input type="hidden" name="mode" value="add">
+      <h3>➕ افزودن کاربر جدید</h3>
+      نام کامل: <input name="fullname"><br>
+      نام کاربری: <input name="username"><br>
+      رمز عبور: <input name="password"><br>
+      نقش:
+      <select name="role">
+        <option value="host">host</option>
+        <option value="admin">admin</option>
+      </select><br>
+      <button type="submit">ثبت کاربر</button>
+    </form>
+    <hr>
+    <h3>👥 لیست کاربران</h3>
+    """
+
     for u in users:
-        html += f"<li>👤 {u['fullname']} | نام کاربری: <b>{u['username']}</b> | نقش: {u['role']}</li>"
-    html += "</ul>"
+        html += f"""
+        <form method="POST">
+          <input type="hidden" name="mode" value="edit">
+          <input type="hidden" name="old_username" value="{u['username']}">
+          نام کامل: <input name="fullname" value="{u['fullname']}"><br>
+          نام کاربری: <input name="username" value="{u['username']}"><br>
+          رمز عبور: <input name="password" value="{u['password']}"><br>
+          نقش:
+          <select name="role">
+            <option value="host" {'selected' if u['role']=='host' else ''}>host</option>
+            <option value="admin" {'selected' if u['role']=='admin' else ''}>admin</option>
+          </select><br>
+          <button type="submit">✏️ ویرایش</button>
+        </form>
+        <hr>
+        """
+
     return html
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
+
 
