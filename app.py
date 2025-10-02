@@ -244,6 +244,19 @@ def update_or_delete_admin(username):
         conn.commit()
         return jsonify({"message": "اطلاعات مسئول ویرایش شد"})
 
+@app.route("/debug/users")
+def debug_users():
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT username, fullname, role FROM users")
+    users = cur.fetchall()
+    html = "<h2>لیست کاربران</h2><ul>"
+    for u in users:
+        html += f"<li>👤 {u['fullname']} | نام کاربری: <b>{u['username']}</b> | نقش: {u['role']}</li>"
+    html += "</ul>"
+    return html
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
+
