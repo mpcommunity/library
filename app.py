@@ -334,12 +334,13 @@ from flask import redirect
 
 @app.errorhandler(404)
 def page_not_found(e):
-    return redirect("https://mpcommunity.github.io")
+    return redirect("https://library-ch6k.onrender.com")
 
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
+
 
 
 
